@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>printed_bh — 3D Printing Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:      #F2F2F2;
+  --surface: #FFFFFF;
+  --text:    #3A3A3A;
+  --muted:   #9BA3A8;
+  --accent:  #8B1A1A;
+  --deep:    #5C0F0F;
+  --border:  rgba(58,58,58,0.1);
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'Space Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 3rem;
+  background: rgba(242,242,242,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  transition: border-color .3s, box-shadow .3s;
+}
+nav.scrolled {
+  box-shadow: 0 2px 24px rgba(139,26,26,0.08);
+  border-bottom-color: rgba(139,26,26,0.22);
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.65rem; letter-spacing: 2px;
+  color: var(--text); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 2.5rem; list-style: none; }
+.nav-links a {
+  color: var(--muted); text-decoration: none;
+  font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--accent); }
+.nav-cta {
+  background: var(--accent); color: #fff;
+  padding: .6rem 1.5rem;
+  font-family: var(--font-body); font-size: .72rem;
+  letter-spacing: 1px; text-transform: uppercase;
+  text-decoration: none; transition: background .2s;
+}
+.nav-cta:hover { background: var(--deep); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh; display: flex; align-items: center;
+  padding: 8rem 3rem 4rem; position: relative; overflow: hidden;
+  background: var(--surface);
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(58,58,58,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58,58,58,0.055) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.hero-glow {
+  position: absolute; width: 700px; height: 700px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,26,26,0.08) 0%, transparent 65%);
+  top: -150px; right: -150px; pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; max-width: 860px; }
+.hero-tag {
+  display: inline-flex; align-items: center; gap: .6rem;
+  font-size: .72rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent); border: 1px solid rgba(139,26,26,0.3);
+  padding: .4rem 1rem; margin-bottom: 2rem;
+}
+.hero-tag::before {
+  content:''; width:6px; height:6px;
+  background: var(--accent); border-radius:50%;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(4.5rem, 11vw, 11rem);
+  line-height: .88; letter-spacing: 2px; margin-bottom: 1.75rem;
+  color: var(--text);
+}
+.hero-title .accent { color: var(--accent); }
+.hero-sub {
+  font-size: .85rem; color: var(--muted);
+  max-width: 440px; line-height: 1.9; margin-bottom: 2.5rem;
+}
+.hero-actions { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+
+.btn-primary {
+  background: var(--accent); color: #fff;
+  padding: 1rem 2.5rem;
+  font-family: var(--font-body); font-size: .78rem;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  text-decoration: none; border: 2px solid var(--accent);
+  transition: all .25s; display: inline-block; cursor: pointer;
+}
+.btn-primary:hover { background: var(--deep); border-color: var(--deep); }
+
+.btn-ghost {
+  color: var(--muted); font-family: var(--font-body);
+  font-size: .78rem; letter-spacing: 1.5px; text-transform: uppercase;
+  text-decoration: none; display: inline-flex; align-items: center; gap: .5rem;
+  transition: color .2s;
+}
+.btn-ghost:hover { color: var(--accent); }
+
+/* decorative hex */
+.hero-shape {
+  position: absolute; right: 4%; top: 50%;
+  transform: translateY(-50%); opacity: .2; pointer-events: none;
+}
+
+/* ── STATS ── */
+.stats {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stat { padding: 2.5rem 3rem; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-num {
+  font-family: var(--font-display); font-size: 3.5rem;
+  color: var(--accent); line-height: 1; margin-bottom: .3rem;
+}
+.stat-label { font-size: .72rem; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+/* ── SECTION BASE ── */
+section { padding: 6rem 3rem; }
+.section-tag { font-size: .7rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: .75rem; }
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem,5vw,5rem);
+  line-height: .95; letter-spacing: 1px;
+  color: var(--text); margin-bottom: 1rem;
+}
+.section-sub { color: var(--muted); font-size: .82rem; max-width: 460px; line-height: 1.9; }
+
+/* ── SERVICES ── */
+#services { background: var(--bg); }
+.services-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); margin-top: 3.5rem;
+}
+.service-card {
+  background: var(--surface); padding: 2.5rem;
+  position: relative; overflow: hidden; transition: background .3s;
+}
+.service-card::before {
+  content:''; position:absolute; top:0; left:0;
+  width:3px; height:0; background: var(--accent);
+  transition: height .4s ease;
+}
+.service-card:hover::before { height: 100%; }
+.service-card:hover { background: #fdf9f9; }
+.service-icon { width:44px; height:44px; margin-bottom:1.5rem; color: var(--accent); }
+.service-num {
+  font-family: var(--font-display); font-size: 5rem;
+  color: #EBEBEB; line-height:1;
+  position:absolute; bottom:.75rem; right:1.25rem;
+  user-select:none; transition: color .3s;
+}
+.service-card:hover .service-num { color: #E2E2E2; }
+.service-name { font-family: var(--font-display); font-size:1.6rem; letter-spacing:1px; margin-bottom:.75rem; color: var(--text); }
+.service-desc { font-size:.78rem; color: var(--muted); line-height:1.9; }
+
+/* ── GALLERY ── */
+#work { background: var(--surface); padding-top: 2rem; }
+.work-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:2.5rem; }
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  grid-template-rows: repeat(2, 280px);
+  gap: 2px; background: var(--border);
+}
+.gallery-item { background: #E4E4E4; position:relative; overflow:hidden; cursor:pointer; }
+.gallery-item:first-child { grid-column: span 2; }
+.gallery-item svg { width:100%; height:100%; position:absolute; inset:0; transition: transform .5s ease; }
+.gallery-item:hover svg { transform: scale(1.04); }
+.gallery-overlay {
+  position:absolute; inset:0;
+  background: rgba(92,15,15,0.9);
+  display:flex; flex-direction:column; justify-content:flex-end;
+  padding:1.5rem; opacity:0; transition: opacity .3s;
+}
+.gallery-item:hover .gallery-overlay { opacity:1; }
+.gallery-overlay h3 { font-family: var(--font-display); font-size:1.2rem; letter-spacing:1px; margin-bottom:.3rem; color:#fff; }
+.gallery-overlay p { font-size:.72rem; color:rgba(255,255,255,.6); }
+
+/* ── PROCESS ── */
+#process { background: var(--bg); }
+.process-wrap { position:relative; margin-top:4rem; }
+.process-line {
+  position:absolute; top:24px;
+  left: calc(12.5% + 24px); right: calc(12.5% + 24px);
+  height:1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent);
+}
+.process-grid { display:grid; grid-template-columns: repeat(4,1fr); }
+.process-step { padding:0 1.5rem 2rem; text-align:center; }
+.process-num {
+  width:48px; height:48px; border:1px solid var(--accent); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display); font-size:1.1rem; color: var(--accent);
+  margin:0 auto 1.5rem; background: var(--bg);
+  position:relative; z-index:1;
+}
+.process-step h3 { font-family: var(--font-display); font-size:1.15rem; letter-spacing:1px; margin-bottom:.5rem; color: var(--text); }
+.process-step p { font-size:.75rem; color: var(--muted); line-height:1.8; }
+
+/* ── CTA BANNER ── */
+.cta-section {
+  background: var(--accent);
+  padding: 6rem 3rem; text-align:center;
+  position:relative; overflow:hidden;
+}
+.cta-section::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at center, var(--deep) 0%, transparent 65%);
+  opacity: .55;
+}
+.cta-title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem,6vw,6.5rem);
+  line-height:.95; letter-spacing:2px;
+  color:#fff; margin-bottom:1.5rem; position:relative;
+}
+.cta-title span { color: #F2F2F2; opacity:.85; }
+.cta-sub { color:rgba(255,255,255,.7); font-size:.82rem; margin-bottom:2.5rem; position:relative; }
+.btn-white {
+  background:#fff; color: var(--accent);
+  padding:1rem 2.5rem;
+  font-family: var(--font-body); font-size:.78rem;
+  letter-spacing:1.5px; text-transform:uppercase;
+  text-decoration:none; border:2px solid #fff;
+  transition: all .25s; display:inline-block; position:relative;
+}
+.btn-white:hover { background:transparent; color:#fff; }
+
+/* ── CONTACT ── */
+#contact { background: var(--surface); }
+.contact-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:4rem; margin-top:3.5rem; align-items:start; }
+.contact-info h3 { font-family: var(--font-display); font-size:1.3rem; letter-spacing:1px; margin-bottom:2rem; color: var(--text); }
+.contact-item { display:flex; flex-direction:column; gap:.2rem; margin-bottom:1.25rem; }
+.contact-label { font-size:.68rem; color: var(--muted); letter-spacing:2px; text-transform:uppercase; }
+.contact-value { font-size:.88rem; color: var(--text); }
+
+.formats-box {
+  margin-top:2.5rem; padding:1.5rem;
+  background: var(--bg); border:1px solid var(--border);
+}
+.formats-box .fl { font-size:.68rem; color: var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:.5rem; }
+.formats-box .fv { font-size:.85rem; color: var(--text); }
+
+.contact-form { display:flex; flex-direction:column; gap:1rem; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.contact-form input,
+.contact-form textarea {
+  width:100%; background: var(--bg);
+  border:1px solid var(--border); color: var(--text);
+  padding:.9rem 1rem;
+  font-family: var(--font-body); font-size:.78rem;
+  outline:none; transition: border-color .2s; -webkit-appearance:none;
+}
+.contact-form input::placeholder,
+.contact-form textarea::placeholder { color: var(--muted); }
+.contact-form input:focus,
+.contact-form textarea:focus { border-color: var(--accent); }
+.contact-form textarea { resize:none; height:130px; }
+
+/* ── FOOTER ── */
+footer {
+  padding:2.5rem 3rem;
+  border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  background: var(--surface);
+}
+.footer-logo { font-family: var(--font-display); font-size:1.4rem; letter-spacing:2px; color: var(--text); }
+.footer-logo span { color: var(--accent); }
+.footer-copy { font-size:.72rem; color: var(--muted); }
+.footer-links { display:flex; gap:2rem; list-style:none; }
+.footer-links a { font-size:.72rem; color: var(--muted); text-decoration:none; letter-spacing:1px; transition: color .2s; }
+.footer-links a:hover { color: var(--accent); }
+
+/* ── REVEAL ── */
+.reveal { opacity:0; transform:translateY(28px); transition: opacity .65s ease, transform .65s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* ── MOBILE ── */
+@media (max-width:900px) {
+  nav { padding:1rem 1.5rem; }
+  .nav-links { display:none; }
+  section,.hero { padding:4rem 1.5rem; }
+  .hero { padding-top:7rem; }
+  .hero-shape { display:none; }
+  .stats { grid-template-columns:1fr; }
+  .stat { border-right:none; border-bottom:1px solid var(--border); }
+  .services-grid { grid-template-columns:1fr; }
+  .gallery-grid { grid-template-columns:1fr; grid-template-rows: repeat(5,220px); }
+  .gallery-item:first-child { grid-column:span 1; }
+  .process-line { display:none; }
+  .process-grid { grid-template-columns:1fr 1fr; gap:2rem 0; }
+  .contact-grid { grid-template-columns:1fr; gap:2rem; }
+  .form-row { grid-template-columns:1fr; }
+  footer { flex-direction:column; gap:1.5rem; text-align:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">PRINTED<span>_BH</span></a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Get a Quote</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-tag">3D Printing Studio — Bahrain &nbsp;|&nbsp; printed_bh</div>
+    <h1 class="hero-title">PRECISION<br><span class="accent">PRINTED.</span></h1>
+    <p class="hero-sub">From rapid prototypes to complex custom parts — we bring your ideas to life with industrial-grade precision and lightning-fast turnaround.</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">Start a Project</a>
+      <a href="#work" class="btn-ghost">View Our Work &nbsp;→</a>
+    </div>
+  </div>
+  <div class="hero-shape">
+    <svg width="440" height="440" viewBox="0 0 440 440" fill="none">
+      <polygon points="220,30 400,130 400,310 220,410 40,310 40,130" stroke="#8B1A1A" stroke-width="1.2" fill="none"/>
+      <polygon points="220,65 370,148 370,292 220,375 70,292 70,148" stroke="#8B1A1A" stroke-width=".7" fill="none" opacity=".6"/>
+      <polygon points="220,100 340,166 340,274 220,340 100,274 100,166" stroke="#8B1A1A" stroke-width=".4" fill="none" opacity=".35"/>
+      <line x1="220" y1="30" x2="220" y2="410" stroke="#8B1A1A" stroke-width=".4" opacity=".35"/>
+      <line x1="40" y1="130" x2="400" y2="310" stroke="#8B1A1A" stroke-width=".4" opacity=".35"/>
+      <line x1="400" y1="130" x2="40" y2="310" stroke="#8B1A1A" stroke-width=".4" opacity=".35"/>
+      <circle cx="220" cy="220" r="5" fill="#8B1A1A"/>
+      <circle cx="220" cy="220" r="45" stroke="#8B1A1A" stroke-width=".6" fill="none" opacity=".4"/>
+      <circle cx="220" cy="220" r="90" stroke="#8B1A1A" stroke-width=".3" fill="none" opacity=".2"/>
+    </svg>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat reveal">
+    <div class="stat-num">500+</div>
+    <div class="stat-label">Projects Completed</div>
+  </div>
+  <div class="stat reveal" style="transition-delay:.1s">
+    <div class="stat-num">24hr</div>
+    <div class="stat-label">Avg. Turnaround</div>
+  </div>
+  <div class="stat reveal" style="transition-delay:.2s">
+    <div class="stat-num">0.1mm</div>
+    <div class="stat-label">Print Precision</div>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services">
+  <p class="section-tag">— What We Do</p>
+  <h2 class="section-title">OUR SERVICES</h2>
+  <p class="section-sub">Professional 3D printing solutions for every need — from concept to finished part.</p>
+  <div class="services-grid">
+
+    <div class="service-card reveal">
+      <svg class="service-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="6" y="22" width="32" height="16"/>
+        <polyline points="6,22 22,6 38,22"/>
+        <line x1="22" y1="6" x2="22" y2="38"/>
+        <line x1="6" y1="30" x2="38" y2="30"/>
+      </svg>
+      <h3 class="service-name">RAPID PROTOTYPING</h3>
+      <p class="service-desc">Turn your CAD files into physical prototypes within 24 hours. Test, iterate, and refine faster than ever before.</p>
+      <div class="service-num">01</div>
+    </div>
+
+    <div class="service-card reveal" style="transition-delay:.1s">
+      <svg class="service-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4">
+        <circle cx="22" cy="22" r="9"/><circle cx="22" cy="22" r="17"/>
+        <line x1="22" y1="5" x2="22" y2="13"/><line x1="22" y1="31" x2="22" y2="39"/>
+        <line x1="5" y1="22" x2="13" y2="22"/><line x1="31" y1="22" x2="39" y2="22"/>
+      </svg>
+      <h3 class="service-name">CUSTOM PARTS</h3>
+      <p class="service-desc">Functional parts and end-use components printed in engineering-grade materials built for real-world performance.</p>
+      <div class="service-num">02</div>
+    </div>
+
+    <div class="service-card reveal" style="transition-delay:.2s">
+      <svg class="service-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="4" y="10" width="36" height="24"/>
+        <polyline points="4,34 13,20 22,28 31,16 40,34"/>
+        <circle cx="31" cy="16" r="3" fill="currentColor" stroke="none"/>
+      </svg>
+      <h3 class="service-name">LARGE FORMAT</h3>
+      <p class="service-desc">Big ideas need big prints. Our large-format printers handle oversized models without sacrificing detail or quality.</p>
+      <div class="service-num">03</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work">
+  <div class="work-header">
+    <div>
+      <p class="section-tag">— Portfolio</p>
+      <h2 class="section-title">OUR WORK</h2>
+    </div>
+    <a href="#contact" class="btn-ghost" style="margin-bottom:.4rem">View All &nbsp;→</a>
+  </div>
+  <div class="gallery-grid">
+
+    <div class="gallery-item">
+      <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="600" height="280" fill="#E0E0E0"/>
+        <g stroke="#8B1A1A" fill="none" opacity=".45" stroke-width=".9">
+          <rect x="120" y="55" width="360" height="170"/>
+          <rect x="132" y="67" width="140" height="146"/>
+          <rect x="328" y="67" width="140" height="146"/>
+          <circle cx="202" cy="140" r="44"/><circle cx="202" cy="140" r="28"/><circle cx="202" cy="140" r="9"/>
+          <circle cx="398" cy="140" r="44"/><circle cx="398" cy="140" r="28"/><circle cx="398" cy="140" r="9"/>
+          <line x1="132" y1="140" x2="120" y2="140"/>
+          <line x1="272" y1="140" x2="328" y2="140"/>
+          <line x1="468" y1="140" x2="480" y2="140"/>
+          <rect x="272" y="120" width="56" height="40"/>
+          <line x1="300" y1="55" x2="300" y2="225"/>
+        </g>
+        <text x="300" y="258" fill="#C0C0C0" font-size="9" text-anchor="middle" font-family="monospace" letter-spacing="2">// MECHANICAL ASSEMBLY V2.1</text>
+      </svg>
+      <div class="gallery-overlay"><h3>MECHANICAL ASSEMBLY</h3><p>Industrial prototype — PLA + Carbon Fiber</p></div>
+    </div>
+
+    <div class="gallery-item">
+      <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="280" height="280" fill="#D8D8D8"/>
+        <g stroke="#8B1A1A" fill="none" opacity=".5" stroke-width=".9">
+          <polygon points="140,35 235,90 235,190 140,245 45,190 45,90"/>
+          <polygon points="140,60 218,103 218,177 140,220 62,177 62,103"/>
+          <polygon points="140,90 196,122 196,158 140,190 84,158 84,122"/>
+          <line x1="140" y1="35" x2="140" y2="245"/>
+          <line x1="45" y1="90" x2="235" y2="190"/>
+          <line x1="235" y1="90" x2="45" y2="190"/>
+          <circle cx="140" cy="140" r="12"/>
+        </g>
+      </svg>
+      <div class="gallery-overlay"><h3>ARCHITECTURAL MODEL</h3><p>Scale model — Resin print</p></div>
+    </div>
+
+    <div class="gallery-item">
+      <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="280" height="280" fill="#DADADA"/>
+        <g stroke="#8B1A1A" fill="none" opacity=".5">
+          <circle cx="140" cy="140" r="95" stroke-width=".5"/>
+          <circle cx="140" cy="140" r="72" stroke-width=".5"/>
+          <circle cx="140" cy="140" r="50" stroke-width=".6"/>
+          <circle cx="140" cy="140" r="30" stroke-width="1"/>
+          <circle cx="140" cy="140" r="10" stroke-width="1.5"/>
+          <line x1="140" y1="45" x2="140" y2="34" stroke-width="1.5"/>
+          <line x1="140" y1="235" x2="140" y2="246" stroke-width="1.5"/>
+          <line x1="45" y1="140" x2="34" y2="140" stroke-width="1.5"/>
+          <line x1="235" y1="140" x2="246" y2="140" stroke-width="1.5"/>
+          <line x1="73" y1="73" x2="65" y2="65" stroke-width="1.5"/>
+          <line x1="207" y1="73" x2="215" y2="65" stroke-width="1.5"/>
+          <line x1="73" y1="207" x2="65" y2="215" stroke-width="1.5"/>
+          <line x1="207" y1="207" x2="215" y2="215" stroke-width="1.5"/>
+        </g>
+      </svg>
+      <div class="gallery-overlay"><h3>CUSTOM GEAR SYSTEM</h3><p>Functional part — PETG material</p></div>
+    </div>
+
+    <div class="gallery-item">
+      <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="280" height="280" fill="#D4D4D4"/>
+        <g stroke="#8B1A1A" fill="none" opacity=".45" stroke-width=".8">
+          <polygon points="140,44 240,100 240,200 140,256 40,200 40,100" stroke-width="1"/>
+          <line x1="140" y1="44" x2="140" y2="152"/>
+          <line x1="40" y1="100" x2="140" y2="152"/>
+          <line x1="240" y1="100" x2="140" y2="152"/>
+          <polygon points="140,76 210,115 210,185 140,224 70,185 70,115" stroke-width=".5" opacity=".5"/>
+          <circle cx="140" cy="152" r="6" fill="#8B1A1A" stroke="none" opacity=".8"/>
+        </g>
+      </svg>
+      <div class="gallery-overlay"><h3>PRODUCT HOUSING</h3><p>Consumer product — ABS material</p></div>
+    </div>
+
+    <div class="gallery-item">
+      <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+        <rect width="280" height="280" fill="#DCDCDC"/>
+        <g stroke="#8B1A1A" fill="none" opacity=".45" stroke-width=".9">
+          <path d="M95,30 Q180,70 95,120 Q10,170 95,210 Q180,250 95,280"/>
+          <path d="M185,30 Q100,70 185,120 Q270,170 185,210 Q100,250 185,280"/>
+          <line x1="95" y1="54"  x2="185" y2="54"  stroke-width=".5"/>
+          <line x1="95" y1="75"  x2="185" y2="75"  stroke-width=".5"/>
+          <line x1="95" y1="96"  x2="185" y2="96"  stroke-width=".5"/>
+          <line x1="95" y1="117" x2="185" y2="117" stroke-width=".5"/>
+          <line x1="95" y1="140" x2="185" y2="140" stroke-width=".5"/>
+          <line x1="95" y1="163" x2="185" y2="163" stroke-width=".5"/>
+          <line x1="95" y1="184" x2="185" y2="184" stroke-width=".5"/>
+          <line x1="95" y1="205" x2="185" y2="205" stroke-width=".5"/>
+        </g>
+      </svg>
+      <div class="gallery-overlay"><h3>ORGANIC FORM</h3><p>Art piece — Flex TPU material</p></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <p class="section-tag">— How It Works</p>
+  <h2 class="section-title">THE PROCESS</h2>
+  <div class="process-wrap">
+    <div class="process-line"></div>
+    <div class="process-grid">
+      <div class="process-step reveal">
+        <div class="process-num">01</div>
+        <h3>UPLOAD FILE</h3>
+        <p>Send us your STL, OBJ, or STEP file. No file? Our team can help design from scratch.</p>
+      </div>
+      <div class="process-step reveal" style="transition-delay:.1s">
+        <div class="process-num">02</div>
+        <h3>GET QUOTE</h3>
+        <p>Receive a detailed quote within hours — material options, timeline, and exact cost.</p>
+      </div>
+      <div class="process-step reveal" style="transition-delay:.2s">
+        <div class="process-num">03</div>
+        <h3>WE PRINT</h3>
+        <p>Your part is printed, post-processed, and quality-checked by our expert team.</p>
+      </div>
+      <div class="process-step reveal" style="transition-delay:.3s">
+        <div class="process-num">04</div>
+        <h3>DELIVERED</h3>
+        <p>Delivered to your door or ready for pickup — fast, secure, perfectly packaged.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="cta-title">READY TO<br><span>BUILD SOMETHING?</span></h2>
+  <p class="cta-sub">Send us your file and get a quote within 24 hours.</p>
+  <a href="#contact" class="btn-white">Start Your Project &nbsp;→</a>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <p class="section-tag">— Get In Touch</p>
+  <h2 class="section-title">CONTACT US</h2>
+  <p class="section-sub">Have a project in mind? Send us a message and we'll get back to you within 24 hours.</p>
+
+  <div class="contact-grid">
+    <div class="contact-info">
+      <h3>LET'S TALK</h3>
+      <div class="contact-item">
+        <span class="contact-label">Email</span>
+        <span class="contact-value">printedbh@gmail.com</span>
+      </div>
+      <div class="contact-item">
+        <span class="contact-label">Phone / WhatsApp</span>
+        <span class="contact-value">+973 3308 7654</span>
+      </div>
+      <div class="contact-item">
+        <span class="contact-label">Location</span>
+        <span class="contact-value">Manama, Bahrain</span>
+      </div>
+      <div class="contact-item">
+        <span class="contact-label">Working Hours</span>
+        <span class="contact-value">Sun – Thu, 9am – 6pm</span>
+      </div>
+      <div class="formats-box">
+        <p class="fl">Accepted File Formats</p>
+        <p class="fv">STL &nbsp;/&nbsp; OBJ &nbsp;/&nbsp; STEP &nbsp;/&nbsp; 3MF</p>
+      </div>
+    </div>
+
+    <form class="contact-form" onsubmit="handleSubmit(event)">
+      <div class="form-row">
+        <input type="text" placeholder="Your name" required>
+        <input type="email" placeholder="Email address" required>
+      </div>
+      <input type="text" placeholder="Project type (e.g. Prototype, Custom Part)">
+      <textarea placeholder="Tell us about your project..."></textarea>
+      <button type="submit" class="btn-primary" style="width:100%;padding:1rem;font-size:.78rem;letter-spacing:1.5px;">
+        SEND MESSAGE &nbsp;→
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">PRINTED<span>_BH</span></div>
+  <p class="footer-copy">© 2025 printed_bh. All rights reserved.</p>
+  <ul class="footer-links">
+    <li><a href="#">Instagram</a></li>
+    <li><a href="#">LinkedIn</a></li>
+    <li><a href="#">WhatsApp</a></li>
+  </ul>
+</footer>
+
+<script>
+  // Scroll reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: .08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Nav shadow on scroll
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', scrollY > 60);
+  });
+
+  // Form feedback
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const orig = btn.textContent;
+    btn.textContent = 'MESSAGE SENT ✓';
+    btn.style.background = '#5C0F0F';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; e.target.reset(); }, 3000);
+  }
+</script>
+</body>
+</html>
